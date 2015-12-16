@@ -29,7 +29,7 @@ bool running = true;  // Global to keep track of if the program should run.
 // display.  Manages all the BCM GPU and CPU resources automatically while in scope.
 class BCMDisplayCapture {
 public:
-  BCMDisplayCapture(int width, int height):
+  BCMDisplayCapture(int width=-1, int height=-1):
     _width(width),
     _height(height),
     _display(0),
@@ -48,18 +48,23 @@ public:
     cout << "Primary display:" << endl
          << " resolution: " << display_info.width << "x" << display_info.height << endl
          << " format: " << display_info.input_format << endl;
-     // Create a GPU image surface to hold the captured screen.
-     uint32_t image_prt;
-     _screen_resource = vc_dispmanx_resource_create(VC_IMAGE_RGB888, width, height, &image_prt);
-     if (!_screen_resource) {
-       throw runtime_error("Unable to create screen surface!");
-     }
-     // Create a rectangular region of the captured screen size.
-     vc_dispmanx_rect_set(&_rect, 0, 0, _width, _height);
-     // Allocate CPU memory for copying out the captured screen.  Must be aligned
-     // to a larger size because of GPU surface memory size constraints.
-     _pitch = ALIGN_UP(_width*3, 32);
-     _screen_data = new uint8_t[_pitch*_height];
+    // If no width and height were specified then grab the entire screen.
+    if ((_width == -1) || (_height == -1)) {
+      _width = display_info.width;
+      _height = display_info.height;
+    }
+    // Create a GPU image surface to hold the captured screen.
+    uint32_t image_prt;
+    _screen_resource = vc_dispmanx_resource_create(VC_IMAGE_RGB888, _width, _height, &image_prt);
+    if (!_screen_resource) {
+      throw runtime_error("Unable to create screen surface!");
+    }
+    // Create a rectangular region of the captured screen size.
+    vc_dispmanx_rect_set(&_rect, 0, 0, _width, _height);
+    // Allocate CPU memory for copying out the captured screen.  Must be aligned
+    // to a larger size because of GPU surface memory size constraints.
+    _pitch = ALIGN_UP(_width*3, 32);
+    _screen_data = new uint8_t[_pitch*_height];
   }
 
   void capture() {
@@ -122,6 +127,23 @@ int main(int argc, char** argv) {
          << " chain_length: " << config.getChainLength() << endl
          << " parallel_count: " << config.getParallelCount() << endl;
 
+    // Set screen capture state depending on if a crop region is specified or not.
+    // When not cropped grab the entire screen and resize it down to the LED display.
+    // However when cropping is enabled instead grab the entire screen (by
+    // setting the capture_width and capture_height to -1) and specify an offset
+    // to the start of the crop rectangle.
+    int capture_width = config.getDisplayWidth();
+    int capture_height = config.getDisplayHeight();
+    int x_offset = 0;
+    int y_offset = 0;
+    if (config.hasCropOrigin()) {
+      cout << " crop_origin: (" << config.getCropX() << ", " << config.getCropY() << ")" << endl;
+      capture_width = -1;
+      capture_height = -1;
+      x_offset = config.getCropX();
+      y_offset = config.getCropY();
+    }
+
     // Initialize matrix library.
     GPIO io;
     if (!io.Init()) {
@@ -137,8 +159,7 @@ int main(int argc, char** argv) {
 
     // Initialize BCM functions and display capture class.
     bcm_host_init();
-    BCMDisplayCapture displayCapture(config.getDisplayWidth(),
-                                     config.getDisplayHeight());
+    BCMDisplayCapture displayCapture(capture_width, capture_height);
 
     // Loop forever waiting for Ctrl-C signal to quit.
     signal(SIGINT, sigintHandler);
@@ -150,7 +171,7 @@ int main(int argc, char** argv) {
       for (int y=0; y<config.getDisplayHeight(); ++y) {
         for (int x=0; x<config.getDisplayWidth(); ++x) {
           uint8_t red, green, blue;
-          displayCapture.getPixel(x, y, &red, &green, &blue);
+          displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green, &blue);
           canvas.SetPixel(x, y, red, green, blue);
         }
       }

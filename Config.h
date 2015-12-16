@@ -35,6 +35,15 @@ public:
     return GridTransformer(_display_width, _display_height, _panel_width,
                            _panel_height, _chain_length, _panels);
   }
+  bool hasCropOrigin() const {
+    return (_crop_x > -1) && (_crop_y > -1);
+  }
+  int getCropX() const {
+    return _crop_x;
+  }
+  int getCropY() const {
+    return _crop_y;
+  }
 
 private:
   int _display_width,
@@ -42,7 +51,9 @@ private:
       _panel_width,
       _panel_height,
       _chain_length,
-      _parallel_count;
+      _parallel_count,
+      _crop_x,
+      _crop_y;
   std::vector<GridTransformer::Panel> _panels;
 };
 

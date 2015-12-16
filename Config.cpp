@@ -25,6 +25,18 @@ Config::Config(const string& filename) {
     _panel_height = root["panel_height"];
     _chain_length = root["chain_length"];
     _parallel_count = root["parallel_count"];
+    // Set default value for optional config values.
+    _crop_x = -1;
+    _crop_y = -1;
+    // Load optional crop_origin value.
+    if (root.exists("crop_origin")) {
+      libconfig::Setting& crop_origin = root["crop_origin"];
+      if (crop_origin.getLength() != 2) {
+        throw invalid_argument("crop_origin must be a list with two values, the X and Y coordinates of the crop box origin!");
+      }
+      _crop_x = crop_origin[0];
+      _crop_y = crop_origin[1];
+    }
     // Do basic validation of configuration.
     if (_display_width % _panel_width != 0) {
       throw invalid_argument("display_width must be a multiple of panel_width!");
