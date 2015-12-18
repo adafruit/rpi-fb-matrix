@@ -1,5 +1,6 @@
 # rpi-fb-matrix
 Raspberry Pi framebuffer copy tool for RGB LED matrices.  Show what's on a Pi HDMI output on a big RGB LED matrix chain!
+See the full guide with details on installation and configuration at: https://learn.adafruit.com/raspberry-pi-led-matrix-display/overview
 
 ## Setup
 
