@@ -1,3 +1,4 @@
+// -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
 // Program to copy the contents of the Raspberry Pi primary display to LED matrices.
 // Author: Tony DiCola
 #include <iostream>
@@ -19,11 +20,10 @@
 using namespace std;
 using namespace rgb_matrix;
 
-
-bool running = true;  // Global to keep track of if the program should run.
-                      // Will be set false by a SIGINT handler when ctrl-c is
-                      // pressed, then the main loop will cleanly exit.
-
+// Global to keep track of if the program should run.
+// Will be set false by a SIGINT handler when ctrl-c is
+// pressed, then the main loop will cleanly exit.
+volatile bool running = true;
 
 // Class to encapsulate all the logic for capturing an image of the Pi's primary
 // display.  Manages all the BCM GPU and CPU resources automatically while in scope.
@@ -104,21 +104,33 @@ private:
   uint8_t* _screen_data;
 };
 
-
-void sigintHandler(int s) {
+static void sigintHandler(int s) {
   running = false;
 }
 
+static void usage(const char* progname) {
+    std::cerr << "Usage: " << progname << " [flags] [config-file]" << std::endl;
+    std::cerr << "Flags:" << std::endl;
+    rgb_matrix::RGBMatrix::Options matrix_options;
+    rgb_matrix::RuntimeOptions runtime_options;
+    runtime_options.drop_privileges = -1;  // Need root
+    rgb_matrix::PrintMatrixFlags(stderr, matrix_options, runtime_options);
+}
+
 int main(int argc, char** argv) {
-  try
-  {
-    // Expect one command line parameter with display configuration filename.
-    if (argc != 2) {
-      throw runtime_error("Expected configuration file name as only command line parameter!\r\nUsage: rpi-fb-matrix /path/to/display/config.cfg");
+  try {
+    // Initialize from flags.
+    rgb_matrix::RGBMatrix::Options matrix_options;
+    rgb_matrix::RuntimeOptions runtime_options;
+    runtime_options.drop_privileges = -1;  // Need root
+    if (!rgb_matrix::ParseOptionsFromFlags(&argc, &argv,
+                                           &matrix_options, &runtime_options)) {
+      usage(argv[0]);
+      return 1;
     }
 
-    // Load the configuration.
-    Config config(argv[1]);
+    // Read additional configuration from config file if it exists
+    Config config(&matrix_options, argc >= 2 ? argv[1] : "/dev/null");
     cout << "Using config values: " << endl
          << " display_width: " << config.getDisplayWidth() << endl
          << " display_height: " << config.getDisplayHeight() << endl
@@ -144,18 +156,14 @@ int main(int argc, char** argv) {
       y_offset = config.getCropY();
     }
 
-    // Initialize matrix library.
-    GPIO io;
-    if (!io.Init()) {
-      throw runtime_error("Failed to initialize rpi-led-matrix library! Make sure to run as root with sudo.");
-    }
 
+    // Initialize matrix library.
     // Create canvas and apply GridTransformer.
-    RGBMatrix canvas(&io, config.getPanelHeight(), config.getChainLength(),
-                     config.getParallelCount());
-    GridTransformer grid = config.getGridTransformer();
-    canvas.SetTransformer(&grid);
-    canvas.Clear();
+    RGBMatrix *canvas = CreateMatrixFromOptions(matrix_options, runtime_options);
+    if (config.hasTransformer()) {
+      canvas->ApplyStaticTransformer(config.getGridTransformer());
+    }
+    canvas->Clear();
 
     // Initialize BCM functions and display capture class.
     bcm_host_init();
@@ -172,16 +180,18 @@ int main(int argc, char** argv) {
         for (int x=0; x<config.getDisplayWidth(); ++x) {
           uint8_t red, green, blue;
           displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green, &blue);
-          canvas.SetPixel(x, y, red, green, blue);
+          canvas->SetPixel(x, y, red, green, blue);
         }
       }
-      // Sleep for 25 milliseconds.
+      // Sleep for 25 milliseconds (40Hz refresh)
       usleep(25 * 1000);
     }
-    canvas.Clear();
+    canvas->Clear();
+    delete canvas;
   }
   catch (const exception& ex) {
     cerr << ex.what() << endl;
+    usage(argv[0]);
     return -1;
   }
   return 0;

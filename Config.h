@@ -1,3 +1,4 @@
+// -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
 // Matrix configuration parsing class declaration.
 // Author: Tony DiCola
 #ifndef CONFIG_H
@@ -7,33 +8,41 @@
 #include <vector>
 
 #include "GridTransformer.h"
+#include "led-matrix.h"
 
 class Config {
 public:
-  Config(const std::string& filename);
+  Config(rgb_matrix::RGBMatrix::Options *options,
+         const std::string& filename);
 
   // Attribute accessors:
   int getDisplayWidth() const {
-    return _display_width;
+    return (_display_width < 0)
+      ? getPanelWidth() * getChainLength()
+      : _display_width;
   }
   int getDisplayHeight() const {
-    return _display_height;
+    return (_display_height < 0)
+      ? getPanelHeight() * getParallelCount()
+      : _display_height;
   }
   int getPanelWidth() const {
-    return _panel_width;
+    return (_panel_width) < 0 ? 32 : _panel_width;
   }
   int getPanelHeight() const {
-    return _panel_height;
+    return _moptions->rows;
   }
   int getChainLength() const {
     return _chain_length;
   }
   int getParallelCount() const {
-    return _parallel_count;
+    return _moptions->parallel;
   }
+  bool hasTransformer() const { return !_panels.empty(); }
   GridTransformer getGridTransformer() const {
-    return GridTransformer(_display_width, _display_height, _panel_width,
-                           _panel_height, _chain_length, _panels);
+    return GridTransformer(getDisplayWidth(), getDisplayHeight(),
+                           getPanelWidth(), getPanelHeight(),
+                           getChainLength(), _panels);
   }
   bool hasCropOrigin() const {
     return (_crop_x > -1) && (_crop_y > -1);
@@ -46,12 +55,11 @@ public:
   }
 
 private:
+  rgb_matrix::RGBMatrix::Options* const _moptions;
   int _display_width,
       _display_height,
       _panel_width,
-      _panel_height,
       _chain_length,
-      _parallel_count,
       _crop_x,
       _crop_y;
   std::vector<GridTransformer::Panel> _panels;
