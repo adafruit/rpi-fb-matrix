@@ -78,10 +78,13 @@ int main(int argc, char** argv) {
     GridTransformer grid = config.getGridTransformer();
     canvas.SetTransformer(&grid);
 
+	cout << " grid rows: " << grid.getRows() << endl
+	     << " grid cols: " << grid.getColumns() << endl;
+
     // Clear the canvas, then draw on each panel.
     canvas.Fill(0, 0, 0);
-    for (int i=0; i<grid.getRows(); ++i) {
-      for (int j=0; j<grid.getColumns(); ++j) {
+    for (int j=0; j<grid.getRows(); ++j) {
+      for (int i=0; i<grid.getColumns(); ++i) {
         // Compute panel origin position.
         int x = i*config.getPanelWidth();
         int y = j*config.getPanelHeight();
