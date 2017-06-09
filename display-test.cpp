@@ -88,13 +88,13 @@ int main(int argc, char** argv) {
       panel_columns = grid.getColumns();
     }
 
-    cout << "Panel rows: " << panel_rows << endl
-         << "Panel cols: " << panel_columns << endl;
+    cout << " grid rows: " << panel_rows << endl
+         << " grid cols: " << panel_columns << endl;
 
     // Clear the canvas, then draw on each panel.
     canvas->Fill(0, 0, 0);
-    for (int i=0; i<panel_columns; ++i) {
-      for (int j=0; j<panel_rows; ++j) {
+    for (int j=0; j<panel_rows; ++j) {
+      for (int i=0; i<panel_columns; ++i) {
         // Compute panel origin position.
         int x = i*config.getPanelWidth();
         int y = j*config.getPanelHeight();
