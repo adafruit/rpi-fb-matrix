@@ -1,13 +1,16 @@
 # Configure the rpi-rgb-led-matrix library here:
-# The -DADAFRUIT_RGBMATRIX_HAT value configures the library to use the Adafruit
-# LED matrix HAT wiring, and the -DRGB_SLOWDOWN_GPIO=1 value configures the
-# library to work with a Raspberry Pi 2.  For a Pi 1 (or perhaps even on a Pi 2,
-# but I found it necessary in my testing) you can remove the -DRGB_SLOWDOWN_GPIO=1
-# option.  You can also add any other rpi-rgb-led-matrix library defines here
+# The HARDWARE_DESC=adafruit-hat value configures the library to use the
+# Adafruit LED matrix HAT wiring, and the -DRGB_SLOWDOWN_GPIO=1 value configures
+# the library to work with a Raspberry Pi 2.  For a Pi 1 (or perhaps even on
+# a Pi 2,  but I found it necessary in my testing) you can remove the
+# -DRGB_SLOWDOWN_GPIO=1 option (You also can set this value at runtime via the
+# command line option --led-slowdown-gpio=1).
+# You can also add any other rpi-rgb-led-matrix library defines here
 # to configure the library for more special needs.  See the library's docs for
 # details on options:
 #   https://github.com/hzeller/rpi-rgb-led-matrix/blob/master/lib/Makefile
-export DEFINES = -DADAFRUIT_RGBMATRIX_HAT -DRGB_SLOWDOWN_GPIO=1
+export HARDWARE_DESC=adafruit-hat
+export USER_DEFINES=-DRGB_SLOWDOWN_GPIO=1
 
 # Configure compiler and libraries:
 CXX = g++
