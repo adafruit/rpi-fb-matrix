@@ -27,7 +27,7 @@ Config::Config(rgb_matrix::RGBMatrix::Options *options,
     _panel_width(-1),
     _crop_x(-1),
     _crop_y(-1),
-    _double_buffering
+    _double_buffering(-1)
 {
   try {
     // Load config file with libconfig.

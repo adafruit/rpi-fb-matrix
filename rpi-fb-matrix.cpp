@@ -160,16 +160,14 @@ int main(int argc, char** argv) {
     // Initialize matrix library.
     // Create canvas and apply GridTransformer.
     RGBMatrix *canvas = CreateMatrixFromOptions(matrix_options, runtime_options);
+    FrameCanvas* offscreen = canvas->CreateFrameCanvas();
     if (config.hasTransformer()) {
       canvas->ApplyStaticTransformer(config.getGridTransformer());
     }
     canvas->Clear();
     
-    // Initialize Double Buffering if turned on
+    // Get Double Buffering state
     int double_buffering = config.getDoubleBuffering();
-    if (double_buffering == 1) {
-      LedCanvas *offscreen = led_matrix_create_offscreen_canvas(canvas);
-    }
 
     // Initialize BCM functions and display capture class.
     bcm_host_init();
@@ -187,10 +185,10 @@ int main(int argc, char** argv) {
           for (int x=0; x<config.getDisplayWidth(); ++x) {
             uint8_t red, green, blue;
             displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green, &blue);
-            led_canvas_set_pixel(offscreen, x, y, red, green, blue);   // not shown until swap-on-vsync
+            offscreen->SetPixel(x, y, red, green, blue);   // not shown until SwapOnVSync
           }
         }
-        offscreen = led_matrix_swap_on_vsync(matrix, offscreen);
+        canvas->SwapOnVSync(offscreen);
         // The returned buffer, assigned to offscreen, is now the inactive buffer
         // fill, then swap again.
       }
@@ -209,7 +207,6 @@ int main(int argc, char** argv) {
     }
     canvas->Clear();
     delete canvas;
-    delete offscreen;
   }
   catch (const exception& ex) {
     cerr << ex.what() << endl;
