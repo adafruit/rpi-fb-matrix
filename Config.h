@@ -53,6 +53,9 @@ public:
   int getCropY() const {
     return _crop_y;
   }
+  int getDoubleBuffering() const {
+    return _double_buffering;
+  }
 
 private:
   rgb_matrix::RGBMatrix::Options* const _moptions;
@@ -61,7 +64,8 @@ private:
       _panel_width,
       _chain_length,
       _crop_x,
-      _crop_y;
+      _crop_y,
+      _double_buffering;
   std::vector<GridTransformer::Panel> _panels;
 };
 
