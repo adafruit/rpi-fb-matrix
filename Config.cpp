@@ -26,7 +26,8 @@ Config::Config(rgb_matrix::RGBMatrix::Options *options,
     _display_height(-1),
     _panel_width(-1),
     _crop_x(-1),
-    _crop_y(-1)
+    _crop_y(-1),
+    _double_buffering
 {
   try {
     // Load config file with libconfig.
@@ -39,6 +40,7 @@ Config::Config(rgb_matrix::RGBMatrix::Options *options,
     _moptions->rows = getWithDefault(root, "panel_height", _moptions->rows);
     _chain_length = getWithDefault(root, "chain_length",
                                    _moptions->chain_length);
+    _double_buffering = getWithDefault(root, "double_buffering", 0);
     // While all the code for the transformer assumes number of panels, for
     // the internal representation for the matrix code, we need to normalize
     // that to 32 wide panels.

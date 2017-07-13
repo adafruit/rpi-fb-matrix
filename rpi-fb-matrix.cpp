@@ -164,6 +164,12 @@ int main(int argc, char** argv) {
       canvas->ApplyStaticTransformer(config.getGridTransformer());
     }
     canvas->Clear();
+    
+    // Initialize Double Buffering if turned on
+    int double_buffering = config.getDoubleBuffering();
+    if (double_buffering == 1) {
+      LedCanvas *offscreen = led_matrix_create_offscreen_canvas(canvas);
+    }
 
     // Initialize BCM functions and display capture class.
     bcm_host_init();
@@ -175,12 +181,27 @@ int main(int argc, char** argv) {
     while (running) {
       // Capture the current display image.
       displayCapture.capture();
-      // Loop through the frame data and set the pixels on the matrix canvas.
-      for (int y=0; y<config.getDisplayHeight(); ++y) {
-        for (int x=0; x<config.getDisplayWidth(); ++x) {
-          uint8_t red, green, blue;
-          displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green, &blue);
-          canvas->SetPixel(x, y, red, green, blue);
+      if (double_buffering == 1) {
+        // Loop through the frame data and set the pixels on the matrix canvas.
+        for (int y=0; y<config.getDisplayHeight(); ++y) {
+          for (int x=0; x<config.getDisplayWidth(); ++x) {
+            uint8_t red, green, blue;
+            displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green, &blue);
+            led_canvas_set_pixel(offscreen, x, y, red, green, blue);   // not shown until swap-on-vsync
+          }
+        }
+        offscreen = led_matrix_swap_on_vsync(matrix, offscreen);
+        // The returned buffer, assigned to offscreen, is now the inactive buffer
+        // fill, then swap again.
+      }
+      else {
+        // Loop through the frame data and set the pixels on the matrix canvas.
+        for (int y=0; y<config.getDisplayHeight(); ++y) {
+          for (int x=0; x<config.getDisplayWidth(); ++x) {
+            uint8_t red, green, blue;
+            displayCapture.getPixel(x+x_offset, y+y_offset, &red, &green, &blue);
+            canvas->SetPixel(x, y, red, green, blue);
+          }
         }
       }
       // Sleep for 25 milliseconds (40Hz refresh)
@@ -188,6 +209,7 @@ int main(int argc, char** argv) {
     }
     canvas->Clear();
     delete canvas;
+    delete offscreen;
   }
   catch (const exception& ex) {
     cerr << ex.what() << endl;
